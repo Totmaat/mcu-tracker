@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCU Movie Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center; /* Center vertically */
+        }
+        input[type="checkbox"] {
+            transform: scale(1.5);
+            margin-right: 10px;
+        }
+        .watched label {
+            text-decoration: line-through;
+            color: #888; /* Optional: Change color for watched movies */
+        }
+        #confettiCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .centered {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>MCU Movie Tracker</h1>
+    <div class="centered">
+        <ul id="movieList"></ul>
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/confetti-js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('movies.json')
+            .then(response => response.json())
+            .then(data => {
+                const movies = data;
+                const movieList = document.getElementById('movieList');
+                const watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || {};
+
+                movies.forEach((movieObj, index) => {
+                    const listItem = document.createElement('li');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'movie-' + index;
+                    checkbox.checked = watchedMovies[movieObj.name] === 1;
+                    checkbox.addEventListener('change', () => toggleWatched(movieObj.name, listItem));
+
+                    const label = document.createElement('label');
+                    label.htmlFor = 'movie-' + index;
+                    label.textContent = movieObj.name;
+
+                    listItem.appendChild(checkbox);
+                    listItem.appendChild(label);
+                    movieList.appendChild(listItem);
+
+                    if (checkbox.checked) {
+                        listItem.classList.add('watched');
+                    }
+                });
+
+                function toggleWatched(movie, listItem) {
+                    watchedMovies[movie] = watchedMovies[movie] === 1 ? 0 : 1;
+                    localStorage.setItem('watchedMovies', JSON.stringify(watchedMovies));
+
+                    // Check if all movies are watched
+                    const watchedCount = Object.values(watchedMovies).reduce((acc, val) => acc + val, 0);
+                    if (watchedCount === movies.length) {
+                        // Show confetti effect
+                        const confettiSettings = { target: 'confettiCanvas' };
+                        const confetti = new ConfettiGenerator(confettiSettings);
+                        confetti.render();
+
+                        // Remove confetti after a delay
+                        setTimeout(() => confetti.clear(), 5000);
+                    }
+                }
+            })
+            .catch(error => console.error('Error loading movies:', error));
+        });
+    </script>
+</body>
+</html>
